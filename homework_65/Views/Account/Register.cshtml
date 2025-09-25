@@ -1,0 +1,43 @@
+@model MyChat.Models.RegisterViewModel
+@{
+    Layout = "_Layout";
+}
+<h2>Регистрация</h2>
+<form method="post" action="/Account/Register">
+    <div>
+        <label>UserName</label><br />
+        <input name="UserName" value="@Model?.UserName" />
+    </div>
+    <div>
+        <label>Email</label><br />
+        <input name="Email" value="@Model?.Email" />
+    </div>
+    <div>
+        <label>Дата рождения</label><br />
+        <input name="BirthDate" type="date" value="@Model?.BirthDate.ToString("yyyy-MM-dd")" />
+    </div>
+    <div>
+        <label>Аватар (URL)</label><br />
+        <input name="AvatarUrl" value="@Model?.AvatarUrl" />
+    </div>
+    <div>
+        <label>Пароль</label><br />
+        <input name="Password" type="password" id="pwd" />
+        <button type="button" onclick="toggle('pwd')">👁</button>
+    </div>
+    <div>
+        <label>Подтвердите пароль</label><br />
+        <input name="ConfirmPassword" type="password" id="pwd2" />
+        <button type="button" onclick="toggle('pwd2')">👁</button>
+    </div>
+    <div>
+        <button type="submit">Зарегистрироваться</button>
+    </div>
+</form>
+
+<script>
+function toggle(id) {
+    var e = document.getElementById(id);
+    if (e.type === "password") { e.type = "text"; } else { e.type = "password"; }
+}
+</script>

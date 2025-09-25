@@ -1,0 +1,25 @@
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<MyChat.Models.ApplicationUser> UserManager
+@{
+    Layout = "_Layout";
+    var users = UserManager.Users;
+}
+<h2>Пользователи</h2>
+<table border="1" cellpadding="5">
+    <tr><th>Id</th><th>UserName</th><th>Email</th><th>Заблокирован</th><th>Действие</th></tr>
+    @foreach (var u in users)
+    {
+        <tr>
+            <td>@u.Id</td>
+            <td>@u.UserName</td>
+            <td>@u.Email</td>
+            <td>@u.IsBlocked</td>
+            <td>
+                <form method="post" action="/Admin/ToggleBlock">
+                    <input type="hidden" name="id" value="@u.Id" />
+                    <button type="submit">Toggle Block</button>
+                </form>
+            </td>
+        </tr>
+    }
+</table>

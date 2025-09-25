@@ -1,0 +1,141 @@
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<MyChat.Models.ApplicationUser> UserManager
+@inject SignInManager<MyChat.Models.ApplicationUser> SignInManager
+@{
+    Layout = "_Layout";
+    string currentUserName = User.Identity.IsAuthenticated ? User.Identity.Name : "";
+}
+
+<h2>Чат</h2>
+
+<div id="chatWindow" style="height:500px;border:1px solid #ccc;padding:10px;overflow-y:auto;background:#f9f9f9;"></div>
+
+<div style="margin-top:8px;display:flex;gap:8px;">
+    <input id="messageText" type="text" maxlength="150" style="flex:1" placeholder="Введите сообщение (макс 150 символов)" />
+    <button id="sendBtn">Отправить</button>
+    <div><span id="charsLeft">150</span></div>
+</div>
+
+<script>
+(function() {
+    var chatWindow = document.getElementById("chatWindow");
+    var messageText = document.getElementById("messageText");
+    var sendBtn = document.getElementById("sendBtn");
+    var charsLeft = document.getElementById("charsLeft");
+    var lastId = 0;
+
+    function updateChars() {
+        var left = 150 - messageText.value.length;
+        charsLeft.textContent = String(left);
+    }
+
+    messageText.addEventListener("input", function() { updateChars(); });
+
+    function renderMessage(m) {
+        var wrapper = document.createElement("div");
+        wrapper.style.display = "flex";
+        wrapper.style.marginBottom = "10px";
+        wrapper.style.maxWidth = "70%";
+
+        var inner = document.createElement("div");
+        inner.style.padding = "8px";
+        inner.style.border = "1px solid #ddd";
+        inner.style.borderRadius = "6px";
+        inner.style.background = "#fff";
+
+        var meta = document.createElement("div");
+        meta.style.fontSize = "12px";
+        meta.style.color = "#666";
+        meta.textContent = m.UserName + " • " + (new Date(m.SentAt)).toLocaleString();
+
+        var text = document.createElement("div");
+        text.textContent = m.Text;
+
+        inner.appendChild(text);
+        inner.appendChild(meta);
+
+        var img = document.createElement("img");
+        img.src = m.AvatarUrl || "/images/default-avatar.png";
+        img.style.width = "40px";
+        img.style.height = "40px";
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "50%";
+        img.style.marginRight = "8px";
+
+        var link = document.createElement("a");
+        link.href = "/Profile/User?username=" + encodeURIComponent(m.UserName);
+        link.textContent = m.UserName;
+        // replace meta line's username with link (optional)
+
+        if (m.UserName === "@currentUserName") {
+            wrapper.style.marginLeft = "auto";
+            inner.style.background = "#dcf8c6";
+        }
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(inner);
+        chatWindow.appendChild(wrapper);
+
+        lastId = Math.max(lastId, m.Id);
+    }
+
+    function loadInitial() {
+        fetch("/Chat/GetMessages")
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                chatWindow.innerHTML = "";
+                for (var i = 0; i < data.length; i = i + 1) {
+                    renderMessage(data[i]);
+                }
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            });
+    }
+
+    function poll() {
+        fetch("/Chat/GetMessages?afterId=" + encodeURIComponent(String(lastId)))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.length > 0) {
+                    for (var i = 0; i < data.length; i = i + 1) {
+                        renderMessage(data[i]);
+                    }
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                }
+            })
+            .catch(function(){});
+    }
+
+    function send() {
+        var text = messageText.value.trim();
+        if (text.length === 0) return;
+        if (text.length > 150) { alert("Максимум 150 символов"); return; }
+
+        fetch("/Chat/Send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text })
+        }).then(function(response) {
+            if (!response.ok) {
+                return response.text().then(function(t) { throw t; });
+            }
+            return response.json();
+        })
+        .then(function(msg) {
+            messageText.value = "";
+            updateChars();
+            renderMessage(msg);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        })
+        .catch(function(e) { alert("Ошибка: " + e); });
+    }
+
+    sendBtn.addEventListener("click", function() { send(); });
+    messageText.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") { e.preventDefault(); send(); }
+    });
+
+    updateChars();
+    loadInitial();
+    setInterval(poll, 5000);
+})();
+</script>

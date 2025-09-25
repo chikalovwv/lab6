@@ -1,0 +1,42 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<MyChat.Models.ApplicationUser> SignInManager
+@inject UserManager<MyChat.Models.ApplicationUser> UserManager
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>homework</title>
+    <meta name="viewport" content="width=device-width" />
+    <style>
+        body { font-family: Arial, sans-serif; padding: 10px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/">Главная</a>
+        <a href="/Chat/Index">Чат</a>
+        <a href="/Admin/Index">Админ</a>
+        @if (SignInManager.IsSignedIn(User))
+        {
+            <text>
+                <span>Привет, @User.Identity.Name</span>
+                <form method="post" action="/Account/Logout" style="display:inline">
+                    <button type="submit">Выход</button>
+                </form>
+            </text>
+        }
+        else
+        {
+            <a href="/Account/Login">Вход</a>
+            <a href="/Account/Register">Регистрация</a>
+        }
+    </nav>
+    <hr />
+</header>
+<main>
+    @RenderBody()
+</main>
+</body>
+</html>

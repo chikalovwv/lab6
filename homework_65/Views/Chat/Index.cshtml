@@ -1,0 +1,91 @@
+@{
+    ViewData["Title"] = "Чат";
+}
+
+<h2>Чат</h2>
+
+<div id="chat-box" style="border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; background: #f9f9f9;">
+    <div id="messages"></div>
+</div>
+
+<div style="margin-top: 10px;">
+    <input type="text" id="messageInput" maxlength="150" placeholder="Введите сообщение..." style="width: 80%;" />
+    <button id="sendBtn">Отправить</button>
+</div>
+
+@section Scripts {
+    <script src="~/js/chat.js"></script>}
+    <script>
+        function loadMessages() {
+            $.getJSON("/Chat/GetLastMessages", function (data) {
+                var messagesDiv = document.getElementById("messages");
+                messagesDiv.innerHTML = "";
+
+                for (let i = 0; i < data.length; i++) {
+                    let msg = data[i];
+                    let cssClass = msg.isMine ? "my-message" : "other-message";
+                    let avatar = msg.avatar
+                        ? "<img src='" + msg.avatar + "' width='30' style='vertical-align:middle;margin-right:5px;'/>"
+                        : "";
+                    let time = new Date(msg.sentAt).toLocaleTimeString();
+
+                    messagesDiv.innerHTML +=
+                        "<div class='" + cssClass + "'>" +
+                        avatar +
+                        "<strong>" + msg.userName + ":</strong> " + msg.text +
+                        " <span style='color:gray;font-size:smaller;'>(" + time + ")</span>" +
+                        "</div>";
+                }
+
+                document.getElementById("chat-box").scrollTop = document.getElementById("chat-box").scrollHeight;
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            loadMessages();
+            setInterval(loadMessages, 5000);
+
+            document.getElementById("sendBtn").addEventListener("click", function () {
+                let text = document.getElementById("messageInput").value;
+                if (!text.trim()) return;
+
+                fetch("/Chat/Send", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: text })
+                }).then(function (response) {
+                    if (response.ok) {
+                        document.getElementById("messageInput").value = "";
+                        loadMessages();
+                    } else {
+                        alert("Ошибка при отправке сообщения");
+                    }
+                });
+            });
+
+            document.getElementById("messageInput").addEventListener("keypress", function (e) {
+                if (e.key === "Enter") {
+                    document.getElementById("sendBtn").click();
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+
+    <style>
+        .my-message {
+            text-align: right;
+            margin: 5px;
+            background: #e0ffe0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .other-message {
+            text-align: left;
+            margin: 5px;
+            background: #ffffff;
+            padding: 5px;
+            border-radius: 5px;
+        }
+    </style>
+}
