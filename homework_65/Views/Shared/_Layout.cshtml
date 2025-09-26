@@ -13,6 +13,7 @@
     </style>
 </head>
 <body>
+@RenderSection("Scripts", required: false) 
 <header>
     <nav>
         <a href="/">Главная</a>
@@ -33,7 +34,7 @@
             <a href="/Account/Register">Регистрация</a>
         }
     </nav>
-    <hr />
+    <hr/>
 </header>
 <main>
     @RenderBody()

@@ -49,42 +49,19 @@ namespace MyChat.Controllers
                 return Json(last);
             }
         }
+[HttpPost]
+public async Task<IActionResult> SendMessage([FromBody] Message message)
+{
+    var user = await _userManager.GetUserAsync(User);
+    message.UserName = user?.UserName;
+    message.AvatarUrl = user?.AvatarUrl;
 
-        [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> Send([FromBody] SendMessageRequest request)
-        {
-            if (request == null || string.IsNullOrWhiteSpace(request.Text))
-            {
-                return BadRequest("empty");
-            }
+    _db.Messages.Add(message);
+    await _db.SaveChangesAsync();
 
-            string text = request.Text.Trim();
-            int length = text.Length;
-            if (length < 1 || length > 150)
-            {
-                return BadRequest("length");
-            }
-
-            ApplicationUser user = await _userManager.GetUserAsync(User);
-            if (user == null) return BadRequest("nouser");
-            if (user.IsBlocked) return Forbid();
-
-            Message message = new Message
-            {
-                Id = _db.Messages.Any() ? _db.Messages.Max(m => m.Id) + 1 : 1,
-                UserId = user.Id,
-                UserName = user.UserName,
-                AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl) ? "/images/default-avatar.png" : user.AvatarUrl,
-                Text = text,
-                SentAt = DateTime.UtcNow
-            };
-
-            _db.Messages.Add(message);
-            await _db.SaveChangesAsync();
-
-            return Json(message);
-        }
+    return Ok(new { success = true, message = message.Text });
+}
+        
     }
 
     public class SendMessageRequest

@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using MyChat.Models;
 
 namespace MyChat.Data
@@ -10,78 +10,50 @@ namespace MyChat.Data
     {
         public static void Seed(IServiceProvider serviceProvider)
         {
-            UserManager<ApplicationUser> userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            RoleManager<IdentityRole> roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            ApplicationDbContext context = serviceProvider.GetRequiredService<ApplicationDbContext>();
-
-            if (!roleManager.RoleExistsAsync("admin").Result)
+            using (var scope = serviceProvider.CreateScope())
             {
-                IdentityRole adminRole = new IdentityRole("admin");
-                roleManager.CreateAsync(adminRole).Wait();
-            }
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-            if (!roleManager.RoleExistsAsync("user").Result)
-            {
-                IdentityRole userRole = new IdentityRole("user");
-                roleManager.CreateAsync(userRole).Wait();
-            }
+                context.Database.EnsureCreated();
 
-            ApplicationUser admin = userManager.FindByNameAsync("admin").Result;
-            if (admin == null)
-            {
-                ApplicationUser newAdmin = new ApplicationUser
+                if (!context.Users.Any())
                 {
-                    UserName = "admin",
-                    Email = "admin@example.com",
-                    BirthDate = new System.DateTime(1990,1,1),
-                    AvatarUrl = "/images/default-avatar.png",
-                    EmailConfirmed = true
-                };
-                IdentityResult result = userManager.CreateAsync(newAdmin, "Admin1!").Result;
-                if (result.Succeeded)
-                {
-                    userManager.AddToRoleAsync(newAdmin, "admin").Wait();
+                    var user = new ApplicationUser
+                    {
+                        UserName = "admin",
+                        Email = "admin@example.com",
+                        DateOfBirth = new DateTime(1990, 1, 1),
+                        Avatar = "/images/default.png"
+                    };
+
+                    var result = userManager.CreateAsync(user, "Admin123!").Result;
+
+                    if (!result.Succeeded)
+                    {
+                        throw new Exception("Не удалось создать пользователя для сидера: " +
+                                            string.Join(", ", result.Errors.Select(e => e.Description)));
+                    }
                 }
-            }
-            ApplicationUser user1 = userManager.FindByNameAsync("user1").Result;
-            if (user1 == null)
-            {
-                ApplicationUser u1 = new ApplicationUser
+                var firstUser = context.Users.First();
+                if (!context.Messages.Any())
                 {
-                    UserName = "user1",
-                    Email = "user1@example.com",
-                    BirthDate = new System.DateTime(1995,1,1),
-                    AvatarUrl = "/images/default-avatar.png",
-                    EmailConfirmed = true
-                };
-                IdentityResult r = userManager.CreateAsync(u1, "User1!a").Result;
-                if (r.Succeeded)
-                {
-                    userManager.AddToRoleAsync(u1, "user").Wait();
-                }
-            }
-            if (!context.Messages.Any())
-            {
-                Message m1 = new Message
-                {
-                    Id = 1,
-                    UserName = "user1",
-                    Text = "Привет! Это тестовое сообщение.",
-                    SentAt = DateTime.UtcNow.AddMinutes(-10),
-                    AvatarUrl = "/images/default-avatar.png"
-                };
-                Message m2 = new Message
-                {
-                    Id = 2,
-                    UserName = "admin",
-                    Text = "Добро пожаловать в чат MyChat!",
-                    SentAt = DateTime.UtcNow.AddMinutes(-5),
-                    AvatarUrl = "/images/default-avatar.png"
-                };
+                    context.Messages.Add(new Message
+                    {
+                        Text = "Привет! Это тестовое сообщение.",
+                        SentAt = DateTime.Now,
+                        UserId = firstUser.Id
+                    });
 
-                context.Messages.Add(m1);
-                context.Messages.Add(m2);
-                context.SaveChanges();
+                    context.Messages.Add(new Message
+                    {
+                        Text = "Второе сообщение от того же пользователя.",
+                        SentAt = DateTime.Now,
+                        UserId = firstUser.Id
+                    });
+
+                    context.SaveChanges();
+                }
             }
         }
     }

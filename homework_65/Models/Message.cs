@@ -4,11 +4,14 @@ namespace MyChat.Models
 {
     public class Message
     {
+        public string Text { get; set; } = string.Empty; 
+        public string? UserName { get; set; }   
+        public string? AvatarUrl { get; set; }          
         public int Id { get; set; }
-        public string UserId { get; set; } 
-        public string UserName { get; set; }
-        public string AvatarUrl { get; set; }
-        public string Text { get; set; }
-        public DateTime SentAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime SentAt { get; set; }
+
+        public string UserId { get; set; }
+        public ApplicationUser User { get; set; }
     }
 }
